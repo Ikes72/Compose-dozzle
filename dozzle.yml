@@ -1,0 +1,57 @@
+---
+version: "3"
+
+#####################################
+#
+# service configuration
+#
+#####################################
+services:
+    service:
+        image: amir20/dozzle:v4.10.0
+        container_name: ${SERVICE}
+        restart: unless-stopped
+        user: ${UID}:${GID}
+        security_opt:
+            - no-new-privileges:true
+        networks:
+            - service_network_1
+            - web_proxy_network
+        expose:
+            - ${WEB_PORT}
+        environment:
+            - DOCKER_HOST=tcp://docker-socket-proxy:2375
+            - DOZZLE_LEVEL= info
+            - DOZZLE_NO_ANALYTICS=true
+        labels:
+            # traefik
+            - traefik.enable=true
+            - traefik.docker.network=${WEB_PROXY_NETWORK}
+            - traefik.http.routers.${SERVICE}.rule=Host(`${SERVICE}.${DOMAIN}`)
+            - traefik.http.routers.${SERVICE}.service=${SERVICE}
+            - traefik.http.services.${SERVICE}.loadbalancer.server.port=${WEB_PORT}
+            # wud
+            - wud.watch=true
+            - wud.display.name=${SERVICE}
+            - wud.tag.include=^\d+\.\d+\.\d+$$
+            - wud.link.template=https://github.com/amir20/dozzle/releases/tag/v$${major}.$${minor}.$${patch}
+            # homepage
+            - homepage.group=${GROUP}
+            - homepage.name=${SERVICE}
+            - homepage.icon=${ICON}
+            - homepage.href=https://${SERVICE}.${DOMAIN}
+            - homepage.description=${DESCRIPTION}
+  
+#####################################
+#
+# network configuration
+#
+#####################################
+networks:
+    service_network_1:
+        external: true
+        name: ${SERVICE_NETWORK_1}
+    web_proxy_network:
+        external: true
+        name: ${WEB_PROXY_NETWORK}
+    
